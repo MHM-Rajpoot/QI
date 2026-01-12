@@ -16,6 +16,8 @@ Use for Snowflake?
 
 SetUp
 
+pip install "snowflake-connector-python[pandas]"
+
 cd /home/mhm/D/Salford/FYP/P10
 python3 -m venv .venv
 source .venv/bin/activate
@@ -36,3 +38,5 @@ git log
 
 git add .
 git commit -m "Initial commit: add Snowflake connection example"
+
+git remote add origin https://github.com/MHM-Rajpoot/QI.git && git branch -M main && git push -u origin main

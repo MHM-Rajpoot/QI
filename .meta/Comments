@@ -1,0 +1,38 @@
+
+Connection Documentation
+
+https://docs.snowflake.cn/en/user-guide/gen-conn-config
+
+
+Use for Snowflake?
+
+    Build or train a machine learning model
+    Use Snowflake Cortex AI to run LLMs, build RAG apps, and deploy ML models
+    Run data analysis and build visualizations
+    Use Snowflake as a data warehouse and data lake
+    List or buy data from the Snowflake marketplace
+    Build or distribute an application with Snowflake
+    Load data, build a data pipeline or migrate an existing warehouse
+
+SetUp
+
+cd /home/mhm/D/Salford/FYP/P10
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+
+cd /home/mhm/D/Salford/FYP/P10
+git init
+git status
+git checkout -b main
+
+git config --global user.name "MHM"
+git config --global user.email "rajpootmhm@gmail.com"
+git config list
+
+git log
+
+git add .
+git commit -m "Initial commit: add Snowflake connection example"

@@ -18,12 +18,9 @@ SetUp
 
 pip install "snowflake-connector-python[pandas]"
 
-cd /home/mhm/D/Salford/FYP/P10
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 
 cd /home/mhm/D/Salford/FYP/P10
 git init

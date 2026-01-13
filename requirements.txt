@@ -1,4 +1,3 @@
-
-snowflake-connector-python
+snowflake-connector-python[pandas]
 tomli
-
+pandas

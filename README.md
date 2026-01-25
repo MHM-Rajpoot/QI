@@ -4,9 +4,9 @@
 
 ## Company Information
 
-**Company Name:** Quadrant Insights
-**Company Website:** [www.quadrant-insights.co.uk](http://www.quadrant-insights.co.uk)
-**Project Location:** Hybrid – Office based in Manchester, M4 4BE
+**Company Name:** Quadrant Insights  
+**Company Website:** [www.quadrant-insights.co.uk](http://www.quadrant-insights.co.uk)  
+**Project Location:** Hybrid – Office based in Manchester, M4 4BE  
 
 ---
 

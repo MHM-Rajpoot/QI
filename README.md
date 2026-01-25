@@ -89,6 +89,15 @@ To successfully complete the project, the following technical skills are essenti
 
 ---
 
+## Project Progress
+
+The project is structured on a **weekly basis**, with detailed documentation maintained for each week. Progress, tasks, and findings can be accessed through the following README files:
+
+* **Week 01:** Data Understanding & Exploratory Data Analysis
+  [Week 01 README](./Week01/README.md)
+
+---
+
 ## Mentors
 
 The project is supported by the following mentors:

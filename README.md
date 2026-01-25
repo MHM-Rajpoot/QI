@@ -1,5 +1,3 @@
-# Project README
-
 ## Project Number **10**
 
 ## Company Information

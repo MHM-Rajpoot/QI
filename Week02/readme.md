@@ -145,13 +145,3 @@ When explicit seniority is missing, job levels are inferred using salary thresho
 
 This rule-based filling ensures consistency across listings and enables meaningful comparison between roles.
 
----
-
-## Outcomes of Week 02
-
-By the end of this week:
-
-- Authentic, real-world job data is successfully collected  
-- Scraping challenges are identified and mitigated  
-- Raw job listings are transformed into clean, structured datasets  
-- Skills, dates, and job levels are standardized for analysis  

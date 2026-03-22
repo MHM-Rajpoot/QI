@@ -1,6 +1,6 @@
 # FE College Enrolment Forecasting Dashboard
 
-Video URL: https://www.youtube.com/watch?v=YOUR_VIDEO_ID
+Video URL: [https://www.youtube.com/watch?v=YOUR_VIDEO_ID](https://youtu.be/RW1QjMm3c6A)
 
 ## Overview
 

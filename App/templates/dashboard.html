@@ -1,0 +1,458 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- KPI Cards -->
+<div class="row mb-4" id="dashboard-section">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Total Learners</h6>
+                        <h2 class="card-title mb-0">{{ '{:,}'.format(summary.total_learners | default(0)) }}</h2>
+                    </div>
+                    <i class="bi bi-people-fill display-4 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Current Year ({{ summary.current_year | default('N/A') }})</h6>
+                        <h2 class="card-title mb-0">{{ '{:,}'.format(summary.current_learners | default(0)) }}</h2>
+                    </div>
+                    <i class="bi bi-calendar-check display-4 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Providers</h6>
+                        <h2 class="card-title mb-0">{{ summary.provider_count | default(0) }}</h2>
+                    </div>
+                    <i class="bi bi-buildings-fill display-4 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Selected Model</h6>
+                        <h2 class="card-title mb-0">{{ selected_model | upper }}</h2>
+                    </div>
+                    <i class="bi bi-lightning display-4 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trends Section -->
+<div class="row mb-4" id="trends-section">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Enrolment Trends with Forecast</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="mainTrendChart" height="350" role="img" aria-label="Enrolment trends and forecast chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Enrolment by Subject Area (SSA)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="ssaChart" height="280" role="img" aria-label="Latest subject area enrolment chart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-table"></i> SSA Data</h5>
+            </div>
+            <div class="card-body" style="max-height: 380px; overflow-y: auto;">
+                <table class="table table-sm table-striped">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th>Year</th>
+                            <th>SSA</th>
+                            <th>Learners</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in ssa_data[:50] %}
+                        <tr>
+                            <td>{{ row.ACADEMIC_YEAR }}</td>
+                            <td>{{ row.SSA_TIER1 }}</td>
+                            <td>{{ '{:,}'.format(row.LEARNER_COUNT | int) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Provider Section -->
+<div class="row mb-4" id="providers-section">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-building"></i> Provider Analysis</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <select id="providerSelect" class="form-select">
+                            <option value="">All Providers</option>
+                            {% for provider in providers %}
+                            <option value="{{ provider.PROVIDER_SKEY }}">{{ provider.PROVIDER_NAME }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="providerChart" role="img" aria-label="Provider learner chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-table"></i> Provider Data</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="providerTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Academic Year</th>
+                                <th>Provider Name</th>
+                                <th>Provider Type</th>
+                                <th>Learners</th>
+                                <th>Enrolments</th>
+                            </tr>
+                        </thead>
+                        <tbody id="providerTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Yearly Summary -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-table"></i> Yearly Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Academic Year</th>
+                                <th>Total Learners</th>
+                                <th>Total Enrolments</th>
+                                <th>Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in trends %}
+                            <tr>
+                                <td>{{ row.ACADEMIC_YEAR }}</td>
+                                <td>{{ '{:,}'.format(row.TOTAL_LEARNERS | int) }}</td>
+                                <td>{{ '{:,}'.format(row.TOTAL_ENROLMENTS | int) }}</td>
+                                <td>
+                                    {% if loop.index > 1 %}
+                                        {% set prev = trends[loop.index0 - 1].TOTAL_LEARNERS %}
+                                        {% set change = ((row.TOTAL_LEARNERS - prev) / prev * 100) | round(1) %}
+                                        {% if change > 0 %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-arrow-up"></i> {{ change }}%
+                                            </span>
+                                        {% elif change < 0 %}
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-arrow-down"></i> {{ change }}%
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">0%</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const trendRows = {{ trends | tojson | safe }};
+    const initialCombinedRows = {{ combined_data | tojson | safe }};
+    const ssaRows = {{ ssa_data | tojson | safe }};
+    const allProviderRows = {{ provider_data | tojson | safe }};
+    const sharedFilters = {{ shared_filters | tojson | safe }};
+
+    function toNumber(value) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function applySharedFilters(params) {
+        if (sharedFilters.start_year !== null && sharedFilters.start_year !== undefined) {
+            params.set('start_year', sharedFilters.start_year);
+        }
+        if (sharedFilters.end_year !== null && sharedFilters.end_year !== undefined) {
+            params.set('end_year', sharedFilters.end_year);
+        }
+        if (sharedFilters.location) {
+            params.set('location', sharedFilters.location);
+        }
+        return params;
+    }
+
+    function createTrendChart(data, model) {
+        const historical = data.filter(d => d.DATA_TYPE === 'Historical');
+        const forecast = data.filter(d => d.DATA_TYPE === 'Forecast');
+        const labels = [...historical.map(d => d.ACADEMIC_YEAR), ...forecast.map(d => d.ACADEMIC_YEAR)];
+
+        const datasets = [{
+            label: 'Historical',
+            data: historical.map(d => toNumber(d.LEARNER_COUNT)),
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1,
+            fill: true
+        }, {
+            label: 'Forecast (' + model.toUpperCase() + ')',
+            data: [...Array(historical.length).fill(null), ...forecast.map(d => toNumber(d.LEARNER_COUNT))],
+            borderColor: 'rgb(255, 99, 132)',
+            borderDash: [5, 5],
+            tension: 0.1,
+            fill: false
+        }];
+
+        const hasIntervals = forecast.some(d => toNumber(d.LOWER_CI) !== null || toNumber(d.UPPER_CI) !== null);
+        if (hasIntervals) {
+            datasets.push({
+                label: 'Lower CI',
+                data: [...Array(historical.length).fill(null), ...forecast.map(d => toNumber(d.LOWER_CI))],
+                borderColor: 'rgba(255, 99, 132, 0.3)',
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                fill: '+1',
+                tension: 0.1,
+                pointRadius: 0
+            }, {
+                label: 'Upper CI',
+                data: [...Array(historical.length).fill(null), ...forecast.map(d => toNumber(d.UPPER_CI))],
+                borderColor: 'rgba(255, 99, 132, 0.3)',
+                fill: false,
+                tension: 0.1,
+                pointRadius: 0
+            });
+        }
+
+        const ctx = document.getElementById('mainTrendChart').getContext('2d');
+        return new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: 'Learner Enrolment Forecast' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: value => value.toLocaleString()
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    let trendChart = createTrendChart(initialCombinedRows, '{{ selected_model }}');
+
+    // SSA chart
+    const ssaCtx = document.getElementById('ssaChart').getContext('2d');
+    const latestYear = ssaRows.reduce((max, d) => d.ACADEMIC_YEAR > max ? d.ACADEMIC_YEAR : max, '');
+    const latestSSA = ssaRows.filter(d => d.ACADEMIC_YEAR === latestYear);
+    const ssaAgg = {};
+    latestSSA.forEach(d => {
+        if (!ssaAgg[d.SSA_TIER1]) ssaAgg[d.SSA_TIER1] = 0;
+        ssaAgg[d.SSA_TIER1] += toNumber(d.LEARNER_COUNT) || 0;
+    });
+
+    new Chart(ssaCtx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(ssaAgg),
+            datasets: [{
+                label: 'Learners',
+                data: Object.values(ssaAgg),
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                    'rgba(255, 159, 64, 0.7)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                title: { display: true, text: (latestYear || 'Latest Year') + ' Distribution' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: value => value.toLocaleString()
+                    }
+                }
+            }
+        }
+    });
+
+    // Provider chart + table
+    function aggregateProviderByYear(rows) {
+        const agg = {};
+        rows.forEach(d => {
+            const year = d.ACADEMIC_YEAR || '';
+            if (!agg[year]) agg[year] = 0;
+            agg[year] += toNumber(d.LEARNER_COUNT) || 0;
+        });
+        return agg;
+    }
+
+    function renderProviderTable(rows) {
+        const tableBody = document.getElementById('providerTableBody');
+        tableBody.innerHTML = '';
+
+        (rows || []).slice(0, 100).forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.ACADEMIC_YEAR || ''}</td>
+                <td>${row.PROVIDER_NAME || ''}</td>
+                <td>${row.COLLEGE_TYPE || ''}</td>
+                <td>${(toNumber(row.LEARNER_COUNT) || 0).toLocaleString()}</td>
+                <td>${(toNumber(row.ENROLMENT_COUNT) || 0).toLocaleString()}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    }
+
+    const providerCtx = document.getElementById('providerChart').getContext('2d');
+    const allYearAgg = aggregateProviderByYear(allProviderRows);
+
+    const providerChart = new Chart(providerCtx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(allYearAgg).sort(),
+            datasets: [{
+                label: 'Total Learners',
+                data: Object.keys(allYearAgg).sort().map(k => allYearAgg[k]),
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                borderColor: 'rgb(54, 162, 235)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                title: { display: true, text: 'Learners by Academic Year' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: value => value.toLocaleString()
+                    }
+                }
+            }
+        }
+    });
+
+    renderProviderTable(allProviderRows);
+
+    document.getElementById('providerSelect').addEventListener('change', function() {
+        const providerId = this.value;
+
+        if (providerId) {
+            const params = applySharedFilters(new URLSearchParams({ provider_id: providerId }));
+
+            fetch(`/api/enrolment/by-provider?${params.toString()}`)
+                .then(async response => {
+                    const payload = await response.json();
+                    if (!response.ok || payload.status !== 'success') {
+                        throw new Error(payload?.error?.message || 'Failed to load provider data.');
+                    }
+                    return payload.data || [];
+                })
+                .then(data => {
+                    providerChart.data.labels = data.map(d => d.ACADEMIC_YEAR);
+                    providerChart.data.datasets[0].data = data.map(d => toNumber(d.LEARNER_COUNT) || 0);
+                    providerChart.options.plugins.title.text = data[0]?.PROVIDER_NAME || 'Provider';
+                    providerChart.update();
+                    renderProviderTable(data);
+                })
+                .catch(err => {
+                    console.error(err);
+                    window.appUI?.notify('Failed to load provider data.', {
+                        title: 'Provider Load Failed',
+                        tone: 'error',
+                        timeoutMs: 7000
+                    });
+                });
+        } else {
+            providerChart.data.labels = Object.keys(allYearAgg).sort();
+            providerChart.data.datasets[0].data = Object.keys(allYearAgg).sort().map(k => allYearAgg[k]);
+            providerChart.options.plugins.title.text = 'Learners by Academic Year';
+            providerChart.update();
+            renderProviderTable(allProviderRows);
+        }
+    });
+</script>
+{% endblock %}

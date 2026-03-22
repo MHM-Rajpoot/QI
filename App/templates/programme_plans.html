@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title | default('Programme Plans Explorer') }}{% endblock %}
+
+{% block head %}
+<style>
+    .programme-hero {
+        background:
+            radial-gradient(circle at top right, rgba(13, 110, 253, 0.18), transparent 38%),
+            linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%);
+        border: 1px solid rgba(13, 110, 253, 0.12);
+        border-radius: 1rem;
+        padding: 1.5rem;
+    }
+
+    .programme-toolbar,
+    .programme-summary-card,
+    .programme-filter-panel {
+        background: #ffffff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 1rem;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+    }
+
+    .programme-summary-card {
+        padding: 1rem 1.1rem;
+        height: 100%;
+    }
+
+    .programme-summary-label {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.35rem;
+        text-transform: uppercase;
+    }
+
+    .programme-summary-value {
+        color: #0f172a;
+        font-size: 1.55rem;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .programme-summary-note {
+        color: #64748b;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+
+    .programme-filter-panel {
+        padding: 1.25rem;
+    }
+
+    .programme-filter-heading {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 0.2rem;
+    }
+
+    .programme-filter-subtext {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 0;
+    }
+
+    .programme-chip {
+        align-items: center;
+        background: #eef4ff;
+        border: 1px solid rgba(13, 110, 253, 0.14);
+        border-radius: 999px;
+        color: #0f172a;
+        display: inline-flex;
+        font-size: 0.88rem;
+        font-weight: 600;
+        gap: 0.45rem;
+        padding: 0.45rem 0.75rem;
+    }
+
+    .programme-chip button {
+        background: none;
+        border: 0;
+        color: #0f172a;
+        line-height: 1;
+        padding: 0;
+    }
+
+    .programme-chip-empty {
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+
+    .programme-table-wrap {
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 1rem;
+        height: clamp(32rem, 100vh, 52rem);
+        min-height: 32rem;
+        overflow: auto;
+    }
+
+    #csvTable th,
+    #csvTable td {
+        white-space: nowrap;
+    }
+
+    #csvTable > :not(caption) > * > * {
+        padding: 0.48rem 0.72rem;
+        line-height: 1.2;
+    }
+
+    #csvTable thead th {
+        background: #f8fafc !important;
+        border-color: rgba(15, 23, 42, 0.08) !important;
+        color: #0f172a !important;
+        position: sticky;
+        top: 0;
+        z-index: 3;
+    }
+
+    #csvHeaderRow th,
+    #csvHeaderRow th.text-muted,
+    #csvHeaderRow th * {
+        color: #0f172a !important;
+        text-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    }
+
+    #csvTable th:first-child,
+    #csvTable td:first-child {
+        background: #ffffff;
+        left: 0;
+        position: sticky;
+        z-index: 2;
+    }
+
+    #csvTable thead th:first-child {
+        background: #f8fafc;
+        z-index: 4;
+    }
+
+    .programme-quick-filter,
+    .programme-advanced-filter {
+        background: #fbfdff;
+        border: 1px solid rgba(15, 23, 42, 0.06);
+        border-radius: 0.9rem;
+        padding: 0.9rem;
+    }
+
+    .programme-advanced-filter.filter-card-hidden {
+        display: none;
+    }
+
+    .programme-offcanvas .offcanvas-header {
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .programme-offcanvas .offcanvas-body {
+        background: #f8fafc;
+    }
+
+    .programme-offcanvas,
+    .programme-offcanvas.show,
+    .programme-offcanvas.showing,
+    .programme-offcanvas.hiding {
+        z-index: 2005 !important;
+    }
+
+    .offcanvas-backdrop,
+    .offcanvas-backdrop.show {
+        z-index: 2000 !important;
+    }
+
+    .programme-status-line {
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="programme-hero mb-4">
+    <div class="row g-3 align-items-start">
+        <div class="col-lg-8">
+            <h2 class="mb-2">Programme Plans Explorer</h2>
+            <p class="text-muted mb-0">
+                Search quickly, use the common filters first, and open advanced filters only when you need the full column set.
+            </p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <div class="small text-muted">Dataset Status</div>
+            <div class="fw-semibold">Programme Plans Dataset</div>
+            <div class="small text-muted mt-1" id="csvInfo" role="status" aria-live="polite">Loading dataset details...</div>
+        </div>
+    </div>
+</div>
+
+<div class="programme-toolbar p-4 mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-lg-6">
+            <label for="csvSearchInput" class="form-label">Search Across All Columns</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input
+                    id="csvSearchInput"
+                    class="form-control"
+                    type="text"
+                    placeholder="Search programme, provider, site, course id..."
+                >
+            </div>
+            <div class="form-text">Typing updates the table automatically.</div>
+        </div>
+        <div class="col-sm-4 col-lg-2">
+            <label for="csvPageSize" class="form-label">Rows Per Page</label>
+            <select id="csvPageSize" class="form-select">
+                <option value="50">50</option>
+                <option value="100" selected>100</option>
+                <option value="250">250</option>
+                <option value="500">500</option>
+            </select>
+        </div>
+        <div class="col-sm-8 col-lg-4">
+            <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                <button id="openAdvancedFiltersBtn" class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#advancedFiltersDrawer" aria-controls="advancedFiltersDrawer">
+                    <i class="bi bi-sliders me-1"></i> Advanced Filters
+                    <span id="advancedFilterCount" class="badge text-bg-light ms-2">0</span>
+                </button>
+                <button id="csvClearBtn" class="btn btn-outline-secondary" type="button">Clear All</button>
+                <button id="csvReloadBtn" class="btn btn-outline-primary" type="button">Reload Data</button>
+                <a id="csvDownloadBtn" class="btn btn-outline-success" href="/api/programme-plans/csv-download">
+                    Download Data
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="programme-summary-card">
+            <div class="programme-summary-label">Rows Loaded</div>
+            <div class="programme-summary-value" id="csvTotalRows">0</div>
+            <div class="programme-summary-note">Full dataset snapshot</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="programme-summary-card">
+            <div class="programme-summary-label">Rows Matching</div>
+            <div class="programme-summary-value" id="csvVisibleRows">0</div>
+            <div class="programme-summary-note">After search and filters</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="programme-summary-card">
+            <div class="programme-summary-label">Columns</div>
+            <div class="programme-summary-value" id="csvColumnCount">0</div>
+            <div class="programme-summary-note">Available in the dataset</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="programme-summary-card">
+            <div class="programme-summary-label">Active Filters</div>
+            <div class="programme-summary-value" id="csvFilterCount">0</div>
+            <div class="programme-summary-note">Search plus column filters</div>
+        </div>
+    </div>
+</div>
+
+<div class="programme-filter-panel mb-4" id="primaryFiltersSection">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+        <div>
+            <div class="programme-filter-heading">Quick Filters</div>
+            <p class="programme-filter-subtext">Common filters stay here. Everything else is in the advanced drawer.</p>
+        </div>
+        <div class="programme-status-line" id="activeFilterInfo" role="status" aria-live="polite">Loading filters...</div>
+    </div>
+    <div id="primaryFiltersContainer" class="row g-3"></div>
+    <div class="mt-4">
+        <div class="programme-filter-heading">Active Filters</div>
+        <div class="mt-2 d-flex flex-wrap gap-2" id="activeFilterChips" aria-live="polite"></div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <strong>Programme Plans Table</strong>
+                <div class="programme-status-line mt-1">Use the sticky header and horizontal scroll for the full dataset.</div>
+            </div>
+            <div class="small text-muted" id="csvPageInfo" role="status" aria-live="polite"></div>
+        </div>
+    </div>
+    <div class="card-body p-4">
+        <div class="programme-table-wrap">
+            <table class="table table-hover table-sm align-middle mb-0" id="csvTable">
+                <thead>
+                    <tr id="csvHeaderRow"></tr>
+                </thead>
+                <tbody id="csvBody"></tbody>
+            </table>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-3">
+            <div class="programme-status-line">Remove any active chip above to broaden the result set.</div>
+            <div class="d-flex gap-2">
+                <button id="csvPrevBtn" class="btn btn-sm btn-outline-secondary" type="button">Prev</button>
+                <button id="csvNextBtn" class="btn btn-sm btn-outline-secondary" type="button">Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="offcanvas offcanvas-end programme-offcanvas" tabindex="-1" id="advancedFiltersDrawer" aria-labelledby="advancedFiltersDrawerLabel">
+    <div class="offcanvas-header">
+        <div>
+            <h5 class="offcanvas-title mb-1" id="advancedFiltersDrawerLabel">Advanced Filters</h5>
+            <div class="small text-muted">All column filters live here. Changes apply immediately.</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="mb-3">
+            <label for="filterSearchInput" class="form-label">Find a Filter</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-funnel"></i></span>
+                <input id="filterSearchInput" type="text" class="form-control" placeholder="Type a column name...">
+            </div>
+            <div class="form-text" id="filterSearchInfo">Loading filters...</div>
+        </div>
+
+        <div class="d-flex gap-2 mb-3">
+            <button id="clearDrawerFiltersBtn" class="btn btn-outline-secondary btn-sm" type="button">Clear All Filters</button>
+        </div>
+
+        <div id="advancedFiltersContainer" class="row g-3"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/programme_plans.js') }}"></script>
+{% endblock %}

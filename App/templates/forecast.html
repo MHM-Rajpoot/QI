@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Forecast Comparison</h5>
+                <span class="badge bg-primary">Selected: {{ selected_model | upper }}</span>
+            </div>
+            <div class="card-body">
+                <canvas id="forecastChart" height="350" role="img" aria-label="Forecast comparison chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Model Comparison Cards -->
+<div class="row mb-4">
+    {% for model_name, data in comparison.items() %}
+    <div class="col-md-4">
+        <div class="card {% if model_name == selected_model %}border-primary{% endif %}">
+            <div class="card-header {% if model_name == selected_model %}bg-primary text-white{% endif %}">
+                <h5 class="mb-0">{{ model_name | upper }}</h5>
+            </div>
+            <div class="card-body">
+                {% if data %}
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Predicted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data %}
+                        <tr>
+                            <td>{{ row.ACADEMIC_YEAR }}</td>
+                            <td>{{ '{:,.0f}'.format(row.PREDICTED_ENROLMENTS) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted">No forecast available</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Model Accuracy -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Model Accuracy</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th>Model</th>
+                        <td>{{ accuracy.model | default('N/A') }}</td>
+                    </tr>
+                    <tr>
+                        <th>MAE</th>
+                        <td>{{ accuracy.mae | default('N/A') }}</td>
+                    </tr>
+                    <tr>
+                        <th>RMSE</th>
+                        <td>{{ accuracy.rmse | default('N/A') }}</td>
+                    </tr>
+                    <tr>
+                        <th>MAPE</th>
+                        <td>{{ accuracy.mape | default('N/A') }}{% if accuracy.mape %}%{% endif %}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Trained</th>
+                        <td>{{ accuracy.last_trained | default('N/A') }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Model Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="modelInfo">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#arimaInfo">
+                                ARIMA
+                            </button>
+                        </h2>
+                        <div id="arimaInfo" class="accordion-collapse collapse" data-bs-parent="#modelInfo">
+                            <div class="accordion-body">
+                                <strong>Best for:</strong> Stable trends without seasonality<br>
+                                <strong>Strengths:</strong> Interpretable, fast training<br>
+                                <strong>Limitations:</strong> No explicit seasonality handling
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sarimaInfo">
+                                SARIMA
+                            </button>
+                        </h2>
+                        <div id="sarimaInfo" class="accordion-collapse collapse" data-bs-parent="#modelInfo">
+                            <div class="accordion-body">
+                                <strong>Best for:</strong> Seasonal patterns (academic cycles)<br>
+                                <strong>Strengths:</strong> Handles seasonality explicitly<br>
+                                <strong>Limitations:</strong> Requires parameter tuning
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#lstmInfo">
+                                LSTM
+                            </button>
+                        </h2>
+                        <div id="lstmInfo" class="accordion-collapse collapse" data-bs-parent="#modelInfo">
+                            <div class="accordion-body">
+                                <strong>Best for:</strong> Complex, nonlinear patterns<br>
+                                <strong>Strengths:</strong> Captures long-term dependencies<br>
+                                <strong>Limitations:</strong> Needs more data, less interpretable
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SSA Forecast Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-book"></i> Forecast by Subject Area ({{ selected_model | upper }})</h5>
+            </div>
+            <div class="card-body">
+                {% if ssa_grouped %}
+                <div style="height: 400px; position: relative;">
+                    <canvas id="ssaForecastChart" role="img" aria-label="Subject area forecast chart"></canvas>
+                </div>
+                <div class="table-responsive mt-4">
+                    <table class="table table-striped table-hover" id="ssaTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Subject Area</th>
+                                <th>26/27</th>
+                                <th>27/28</th>
+                                <th>28/29</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ssa, years in ssa_grouped.items() %}
+                            <tr>
+                                <td>{{ ssa }}</td>
+                                <td>{{ '{:,.0f}'.format(years.get('26/27', 0)) }}</td>
+                                <td>{{ '{:,.0f}'.format(years.get('27/28', 0)) }}</td>
+                                <td>{{ '{:,.0f}'.format(years.get('28/29', 0)) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No SSA forecast data available for {{ selected_model | upper }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const forecastData = {{ forecast_data | tojson | safe }};
+    const comparison = {{ comparison | tojson | safe }};
+    const ssaGrouped = {{ ssa_grouped | tojson | safe }};
+    
+    const ctx = document.getElementById('forecastChart').getContext('2d');
+    
+    // Build datasets for all models
+    const colors = {
+        'arima': 'rgb(255, 99, 132)',
+        'sarima': 'rgb(54, 162, 235)',
+        'lstm': 'rgb(75, 192, 192)'
+    };
+    const datasets = [];
+    
+    for (const [model, data] of Object.entries(comparison)) {
+        if (data && data.length > 0) {
+            datasets.push({
+                label: model.toUpperCase(),
+                data: data.map(d => ({ x: d.ACADEMIC_YEAR, y: d.PREDICTED_ENROLMENTS })),
+                borderColor: colors[model] || 'rgb(153, 102, 255)',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                tension: 0.1
+            });
+        }
+    }
+    
+    const forecastChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                title: { display: true, text: 'Forecast Comparison by Model' }
+            },
+            scales: {
+                x: {
+                    type: 'category',
+                    labels: forecastData.map(d => d.ACADEMIC_YEAR)
+                },
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        callback: value => value.toLocaleString()
+                    }
+                }
+            }
+        }
+    });
+    
+    // SSA Forecast Chart
+    if (ssaGrouped && Object.keys(ssaGrouped).length > 0) {
+        const ssaCtx = document.getElementById('ssaForecastChart').getContext('2d');
+        
+        const ssaLabels = Object.keys(ssaGrouped);
+        const years = ['26/27', '27/28', '28/29'];
+        
+        const ssaDatasets = years.map((year, idx) => ({
+            label: year,
+            data: ssaLabels.map(ssa => ssaGrouped[ssa][year] || 0),
+            backgroundColor: ['rgba(54, 162, 235, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(255, 159, 64, 0.8)'][idx],
+            borderColor: ['rgb(54, 162, 235)', 'rgb(75, 192, 192)', 'rgb(255, 159, 64)'][idx],
+            borderWidth: 1
+        }));
+        
+        new Chart(ssaCtx, {
+            type: 'bar',
+            data: {
+                labels: ssaLabels.map(l => l.length > 25 ? l.substring(0, 22) + '...' : l),
+                datasets: ssaDatasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    y: {
+                        from: 0,
+                        duration: 1500,
+                        easing: 'easeOutBounce'
+                    }
+                },
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: 'Predicted Enrolments by Subject Area' },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => ssaLabels[items[0].dataIndex]
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: value => value.toLocaleString()
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

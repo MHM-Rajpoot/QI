@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Age Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="ageChart" height="300" role="img" aria-label="Age group enrolment chart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-mortarboard"></i> Qualification Levels</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="levelChart" height="300" role="img" aria-label="Qualification level enrolment chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-table"></i> Age Data</h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-sm table-striped">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th>Year</th>
+                            <th>Age Group</th>
+                            <th>Learners</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in age_data %}
+                        <tr>
+                            <td>{{ row.ACADEMIC_YEAR }}</td>
+                            <td>{{ row.AGE_GROUP }}</td>
+                            <td>{{ '{:,}'.format(row.LEARNER_COUNT | int) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-table"></i> Level Data</h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-sm table-striped">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th>Year</th>
+                            <th>Level</th>
+                            <th>Learners</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in level_data %}
+                        <tr>
+                            <td>{{ row.ACADEMIC_YEAR }}</td>
+                            <td>{{ row.LEVEL_DESC }}</td>
+                            <td>{{ '{:,}'.format(row.LEARNER_COUNT | int) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const ageData = {{ age_data | tojson | safe }};
+    const levelData = {{ level_data | tojson | safe }};
+    
+    // Get latest year for pie charts
+    const latestYear = ageData.reduce((max, d) => d.ACADEMIC_YEAR > max ? d.ACADEMIC_YEAR : max, '');
+    
+    // Age Chart
+    const ageCtx = document.getElementById('ageChart').getContext('2d');
+    const latestAge = ageData.filter(d => d.ACADEMIC_YEAR === latestYear);
+    
+    new Chart(ageCtx, {
+        type: 'doughnut',
+        data: {
+            labels: latestAge.map(d => d.AGE_GROUP),
+            datasets: [{
+                data: latestAge.map(d => d.LEARNER_COUNT),
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 206, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(153, 102, 255, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right' },
+                title: { display: true, text: latestYear + ' Age Distribution' }
+            }
+        }
+    });
+    
+    // Level Chart
+    const levelCtx = document.getElementById('levelChart').getContext('2d');
+    const latestLevel = levelData.filter(d => d.ACADEMIC_YEAR === latestYear);
+    
+    new Chart(levelCtx, {
+        type: 'bar',
+        data: {
+            labels: latestLevel.map(d => d.LEVEL_DESC),
+            datasets: [{
+                label: 'Learners',
+                data: latestLevel.map(d => d.LEARNER_COUNT),
+                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                borderColor: 'rgb(75, 192, 192)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                title: { display: true, text: latestYear + ' Qualification Levels' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: value => value.toLocaleString()
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

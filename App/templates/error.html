@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% set safe_error_code = error_code or 500 %}
+{% set safe_error_message = error_message or 'Something went wrong while loading this page.' %}
+{% set retry_url = request.referrer or url_for('dashboard.index') %}
+<section class="card border-0 shadow-sm overflow-hidden" role="alert" aria-live="assertive">
+    <div class="card-body p-4 p-lg-5">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-8">
+                <div class="badge text-bg-danger mb-3">Error {{ safe_error_code }}</div>
+                <h1 class="h2 mb-3">This page could not be loaded</h1>
+                <p class="lead mb-3">{{ safe_error_message }}</p>
+                <p class="text-muted mb-4">
+                    The app is still running, but this request did not complete successfully. You can retry the previous page
+                    or return to the main dashboard.
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ retry_url }}" class="btn btn-primary">
+                        <i class="bi bi-arrow-clockwise"></i> Try Again
+                    </a>
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-house-door"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card bg-light h-100">
+                    <div class="card-body">
+                        <div class="small text-uppercase text-muted mb-2">Next Steps</div>
+                        <ul class="mb-0 ps-3">
+                            <li>Retry the page in case the issue was temporary.</li>
+                            <li>Check Data Management if you suspect a data refresh or connection problem.</li>
+                            <li>Return to the dashboard to continue using the app.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

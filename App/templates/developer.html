@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<style>
+    .dev-contact-card {
+        height: 100%;
+    }
+
+    .dev-contact-card .card-body {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .dev-icon-badge {
+        width: 3.15rem;
+        height: 3.15rem;
+        border-radius: 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(13, 110, 253, 0.1);
+        color: #0b5ed7;
+        box-shadow: inset 0 0 0 1px rgba(13, 110, 253, 0.08);
+    }
+
+    .dev-icon-badge i {
+        font-size: 1.2rem;
+    }
+
+    .dev-icon-badge svg {
+        width: 1.35rem;
+        height: 1.35rem;
+        display: block;
+    }
+
+    .dev-icon-badge.gmail {
+        background: rgba(234, 67, 53, 0.12);
+    }
+
+    .dev-icon-badge.phone {
+        background: rgba(25, 135, 84, 0.12);
+        color: #157347;
+    }
+
+    .dev-icon-badge.linkedin {
+        background: rgba(10, 102, 194, 0.12);
+        color: #0a66c2;
+    }
+
+    .dev-action-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.2rem;
+        height: 1.2rem;
+        margin-right: 0.45rem;
+    }
+
+    .dev-action-icon svg {
+        width: 1rem;
+        height: 1rem;
+        display: block;
+    }
+
+    .dev-quick-icon {
+        margin-top: 0.1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="card border-0 shadow-sm overflow-hidden">
+    <div class="card-body p-0">
+        <div class="row g-0">
+            <div class="col-lg-7">
+                <div class="p-4 p-lg-5">
+                    <div class="badge bg-primary mb-3">Developer</div>
+                    <h1 class="mb-3">Muhammad Hassan Mukhtar</h1>
+
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        <a class="btn btn-primary" href="mailto:rajpootmhm@gmail.com">
+                            <span class="dev-action-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M3 6.75A2.75 2.75 0 0 1 5.75 4h12.5A2.75 2.75 0 0 1 21 6.75v10.5A2.75 2.75 0 0 1 18.25 20H5.75A2.75 2.75 0 0 1 3 17.25V6.75Z" fill="#ffffff"/>
+                                    <path d="M5.2 7.6 12 12.65 18.8 7.6" stroke="#EA4335" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M4.8 17.5 9.7 12.9" stroke="#34A853" stroke-width="1.8" stroke-linecap="round"/>
+                                    <path d="M19.2 17.5 14.3 12.9" stroke="#4285F4" stroke-width="1.8" stroke-linecap="round"/>
+                                    <path d="M4.3 7.2 10.1 11.4" stroke="#FBBC05" stroke-width="1.8" stroke-linecap="round"/>
+                                    <path d="M19.7 7.2 13.9 11.4" stroke="#EA4335" stroke-width="1.8" stroke-linecap="round"/>
+                                </svg>
+                            </span>
+                            Gmail
+                        </a>
+                        <a class="btn btn-outline-primary" href="tel:+447350536488">
+                            <i class="bi bi-telephone-fill me-1"></i> Call
+                        </a>
+                        <a class="btn btn-outline-secondary" href="https://www.linkedin.com/in/-muhammad-hassan-mukhtar-/" target="_blank" rel="noopener noreferrer">
+                            <i class="bi bi-linkedin me-1"></i> LinkedIn
+                        </a>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card dev-contact-card">
+                                <div class="card-body">
+                                    <div class="dev-icon-badge gmail" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" fill="none">
+                                            <path d="M3 6.75A2.75 2.75 0 0 1 5.75 4h12.5A2.75 2.75 0 0 1 21 6.75v10.5A2.75 2.75 0 0 1 18.25 20H5.75A2.75 2.75 0 0 1 3 17.25V6.75Z" fill="#ffffff"/>
+                                            <path d="M5.2 7.6 12 12.65 18.8 7.6" stroke="#EA4335" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M4.8 17.5 9.7 12.9" stroke="#34A853" stroke-width="1.8" stroke-linecap="round"/>
+                                            <path d="M19.2 17.5 14.3 12.9" stroke="#4285F4" stroke-width="1.8" stroke-linecap="round"/>
+                                            <path d="M4.3 7.2 10.1 11.4" stroke="#FBBC05" stroke-width="1.8" stroke-linecap="round"/>
+                                            <path d="M19.7 7.2 13.9 11.4" stroke="#EA4335" stroke-width="1.8" stroke-linecap="round"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="small text-muted mb-2">Gmail</div>
+                                        <div class="fw-semibold">rajpootmhm@gmail.com</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card dev-contact-card">
+                                <div class="card-body">
+                                    <div class="dev-icon-badge phone" aria-hidden="true">
+                                        <i class="bi bi-telephone-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="small text-muted mb-2">Phone</div>
+                                        <div class="fw-semibold">+44 7350536488</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="card dev-contact-card">
+                                <div class="card-body">
+                                    <div class="dev-icon-badge linkedin" aria-hidden="true">
+                                        <i class="bi bi-linkedin"></i>
+                                    </div>
+                                    <div>
+                                        <div class="small text-muted mb-2">LinkedIn</div>
+                                        <a
+                                            class="fw-semibold text-decoration-none"
+                                            href="https://www.linkedin.com/in/-muhammad-hassan-mukhtar-/"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            linkedin.com/in/-muhammad-hassan-mukhtar-/
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="h-100 p-4 p-lg-5 d-flex flex-column justify-content-center" style="background: linear-gradient(180deg, rgba(13, 110, 253, 0.1), rgba(255, 255, 255, 0.88));">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="small text-muted mb-2">Quick Access</div>
+                            <ul class="list-unstyled mb-0 d-grid gap-3">
+                                <li class="d-flex align-items-start gap-3">
+                                    <span class="dev-icon-badge gmail dev-quick-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" fill="none">
+                                            <path d="M3 6.75A2.75 2.75 0 0 1 5.75 4h12.5A2.75 2.75 0 0 1 21 6.75v10.5A2.75 2.75 0 0 1 18.25 20H5.75A2.75 2.75 0 0 1 3 17.25V6.75Z" fill="#ffffff"/>
+                                            <path d="M5.2 7.6 12 12.65 18.8 7.6" stroke="#EA4335" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M4.8 17.5 9.7 12.9" stroke="#34A853" stroke-width="1.8" stroke-linecap="round"/>
+                                            <path d="M19.2 17.5 14.3 12.9" stroke="#4285F4" stroke-width="1.8" stroke-linecap="round"/>
+                                            <path d="M4.3 7.2 10.1 11.4" stroke="#FBBC05" stroke-width="1.8" stroke-linecap="round"/>
+                                            <path d="M19.7 7.2 13.9 11.4" stroke="#EA4335" stroke-width="1.8" stroke-linecap="round"/>
+                                        </svg>
+                                    </span>
+                                    <div>
+                                        <div class="fw-semibold">Gmail contact</div>
+                                        <div class="small text-muted">Best for feedback, updates, or feature requests.</div>
+                                    </div>
+                                </li>
+                                <li class="d-flex align-items-start gap-3">
+                                    <span class="dev-icon-badge phone dev-quick-icon" aria-hidden="true">
+                                        <i class="bi bi-telephone-fill"></i>
+                                    </span>
+                                    <div>
+                                        <div class="fw-semibold">Phone contact</div>
+                                        <div class="small text-muted">Direct call line for fast coordination.</div>
+                                    </div>
+                                </li>
+                                <li class="d-flex align-items-start gap-3">
+                                    <span class="dev-icon-badge linkedin dev-quick-icon" aria-hidden="true">
+                                        <i class="bi bi-linkedin"></i>
+                                    </span>
+                                    <div>
+                                        <div class="fw-semibold">LinkedIn profile</div>
+                                        <div class="small text-muted">Professional profile and public contact route.</div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

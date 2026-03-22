@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ page_title | default('FE Enrolment Dashboard') }}{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="app-shell {{ (request.endpoint or 'app').replace('.', '-') }}">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <!-- Navigation -->
+    <div class="app-navbar-wrap">
+        <nav class="navbar navbar-expand-lg navbar-dark app-navbar" aria-label="Primary navigation">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="{{ url_for('dashboard.index') }}">
+                    <i class="bi bi-bar-chart-fill"></i> FE Enrolment Dashboard
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}" {% if request.endpoint == 'dashboard.index' %}aria-current="page"{% endif %}
+                               href="{{ url_for('dashboard.index', model=selected_model or None, start_year=selected_start_year or None, end_year=selected_end_year or None, location=selected_location or None) }}">
+                                <i class="bi bi-house"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'dashboard.demographics' %}active{% endif %}" {% if request.endpoint == 'dashboard.demographics' %}aria-current="page"{% endif %}
+                               href="{{ url_for('dashboard.demographics', model=selected_model or None, start_year=selected_start_year or None, end_year=selected_end_year or None, location=selected_location or None) }}">
+                                <i class="bi bi-people"></i> Demographics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'dashboard.forecast' %}active{% endif %}" {% if request.endpoint == 'dashboard.forecast' %}aria-current="page"{% endif %}
+                               href="{{ url_for('dashboard.forecast', model=selected_model or None, start_year=selected_start_year or None, end_year=selected_end_year or None, location=selected_location or None) }}">
+                                <i class="bi bi-lightning"></i> Forecast
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'dashboard.college_forecast' %}active{% endif %}" {% if request.endpoint == 'dashboard.college_forecast' %}aria-current="page"{% endif %}
+                               href="{{ url_for('dashboard.college_forecast', model=selected_model or None, start_year=selected_start_year or None, end_year=selected_end_year or None, location=selected_location or None) }}">
+                                <i class="bi bi-mortarboard"></i> College Forecast
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'dashboard.data_management' %}active{% endif %}" {% if request.endpoint == 'dashboard.data_management' %}aria-current="page"{% endif %}
+                               href="{{ url_for('dashboard.data_management') }}">
+                                <i class="bi bi-database"></i> Data Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'dashboard.programme_plans' %}active{% endif %}" {% if request.endpoint == 'dashboard.programme_plans' %}aria-current="page"{% endif %}
+                               href="{{ url_for('dashboard.programme_plans') }}">
+                                <i class="bi bi-table"></i> Programme Plans
+                            </a>
+                        </li>
+                    </ul>
+                    
+                    <!-- Model Selector -->
+                    <div class="d-flex align-items-center app-model-switcher">
+                        <label for="modelSelector" class="text-light app-model-label">Model:</label>
+                        <select id="modelSelector" class="form-select form-select-sm" style="width: auto;">
+                            {% for model in available_models | default(['arima', 'sarima', 'lstm']) %}
+                            <option value="{{ model }}" {% if model == selected_model %}selected{% endif %}>
+                                {{ model | upper }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div id="appNotifications" class="app-toast-stack" aria-live="polite" aria-atomic="false"></div>
+    
+    <!-- Main Content -->
+    <main id="main-content" class="container-fluid app-main py-4" tabindex="-1">
+        {% set shared_filter_pages = ['dashboard.index', 'dashboard.demographics', 'dashboard.forecast', 'dashboard.college_forecast'] %}
+        {% if request.endpoint in shared_filter_pages %}
+        <section class="card border-0 shadow-sm mb-4 app-filter-dock" aria-label="Shared dashboard filters">
+            <div class="card-body">
+                <form method="get" action="{{ request.path }}" class="row g-3 align-items-end">
+                    {% for field_name, field_value in filter_hidden_fields | default({}) | dictsort %}
+                        {% if field_value is not none and field_value != '' %}
+                        <input type="hidden" name="{{ field_name }}" value="{{ field_value }}">
+                        {% endif %}
+                    {% endfor %}
+                    <div class="col-md-3">
+                        <label for="startYearFilter" class="form-label">From Academic Year</label>
+                        <select id="startYearFilter" name="start_year" class="form-select">
+                            <option value="">All years</option>
+                            {% for option in available_years | default([]) %}
+                            <option value="{{ option.value }}" {% if option.value == selected_start_year %}selected{% endif %}>
+                                {{ option.label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="endYearFilter" class="form-label">To Academic Year</label>
+                        <select id="endYearFilter" name="end_year" class="form-select">
+                            <option value="">All years</option>
+                            {% for option in available_years | default([]) %}
+                            <option value="{{ option.value }}" {% if option.value == selected_end_year %}selected{% endif %}>
+                                {{ option.label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="locationFilter" class="form-label">Town / City</label>
+                        <select id="locationFilter" name="location" class="form-select">
+                            <option value="">All locations</option>
+                            {% for option in available_locations | default([]) %}
+                            <option value="{{ option }}" {% if option == selected_location %}selected{% endif %}>
+                                {{ option }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-100">Apply</button>
+                        <a href="{{ filter_reset_url }}" class="btn btn-outline-secondary">Reset</a>
+                    </div>
+                </form>
+                <div class="form-text mt-2">
+                    Filters apply to academic-year data across this page. Location uses provider town/city.
+                </div>
+            </div>
+        </section>
+        {% endif %}
+        <div class="app-content-shell">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">
+                FE Enrolment Forecasting Dashboard &copy; 2026
+                <span class="mx-2">|</span>
+                <a class="text-decoration-none" href="{{ url_for('dashboard.developer', model=selected_model or None) }}">Developer</a>
+            </span>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

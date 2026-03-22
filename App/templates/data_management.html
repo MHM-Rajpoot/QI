@@ -1,0 +1,826 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Database Status Bar - Top of Page (Single Line) -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div id="dbStatusBar" class="alert alert-warning d-flex justify-content-between align-items-center mb-0">
+            <div id="dbStatusContent" role="status" aria-live="polite"><strong>Database:</strong> <span>Checking connection...</span></div>
+            <button id="refreshDbStatusBtn" class="btn btn-sm btn-outline-warning" title="Refresh database status">
+                <i class="bi bi-arrow-clockwise"></i> <span id="refreshBtnText">Retry</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Data Management Operations Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-database"></i> Data Management</h5>
+            </div>
+            <div class="card-body">
+                <p class="lead">Manage your data refresh and model training operations</p>
+                
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <i class="bi bi-arrow-clockwise" style="font-size: 3rem; color: #0d6efd;"></i>
+                                <h5 class="card-title mt-3">Refresh Data</h5>
+                                <p class="card-text">Fetch the latest Snowflake data and refresh the app datasets</p>
+                                <button id="refreshDataBtn" class="btn btn-primary">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-success">
+                            <div class="card-body text-center">
+                                <i class="bi bi-lightning" style="font-size: 3rem; color: #198754;"></i>
+                                <h5 class="card-title mt-3">Train Models</h5>
+                                <p class="card-text">Re-train ARIMA, SARIMA, and LSTM models</p>
+                                <button id="trainModelsBtn" class="btn btn-success">
+                                    <i class="bi bi-lightning"></i> Train Models
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-warning">
+                            <div class="card-body text-center">
+                                <i class="bi bi-gear" style="font-size: 3rem; color: #ffc107;"></i>
+                                <h5 class="card-title mt-3">Connection Setup</h5>
+                                <p class="card-text">Review the Snowflake connection source and required environment variables</p>
+                                <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#credentialsModal">
+                                    <i class="bi bi-gear"></i> Connection Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="statusContainer" class="mt-4" style="display: none;" aria-live="polite">
+                    <div class="alert" id="statusAlert" role="status"></div>
+                    <div class="progress" id="progressBar" style="display: none;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 100%"></div>
+                    </div>
+                    <pre id="outputLog" class="bg-light p-3 mt-3" style="max-height: 400px; overflow-y: auto; display: none;" tabindex="0"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Snowflake Database Structure Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Snowflake Database Structure</h5>
+            </div>
+            <div class="card-body">
+                <!-- Tree View Structure -->
+                <div class="schema-tree" style="font-family: monospace;">
+                    {% for schema_name, schema_data in schema_structure.items() %}
+                    <div class="tree-node">
+                        <div class="tree-item" onclick="toggleNode(this)">
+                            <span class="tree-toggle">▶</span>
+                            <i class="bi bi-folder-fill" style="color: #ffc107;"></i>
+                            <strong>{{ schema_name }}</strong>
+                            <span class="badge bg-primary ms-2">T: {{ schema_data.table_count }}</span>
+                            <span class="badge bg-secondary ms-1">V: {{ schema_data.view_count }}</span>
+                        </div>
+                        <div class="tree-children" style="display: none; margin-left: 20px;">
+                            <!-- Tables Section -->
+                            {% if schema_data.table_count > 0 %}
+                            <div class="tree-node">
+                                <div class="tree-item" onclick="toggleNode(event)">
+                                    <span class="tree-toggle">▶</span>
+                                    <i class="bi bi-table" style="color: #0d6efd;"></i>
+                                    <strong>Tables ({{ schema_data.table_count }})</strong>
+                                </div>
+                                <div class="tree-children" style="display: none; margin-left: 20px;">
+                                    {% for table in schema_data.tables %}
+                                    <div class="tree-node">
+                                        <div class="tree-item">
+                                            <span class="tree-toggle" style="visibility: hidden;">▶</span>
+                                            <i class="bi bi-diagram-3"></i>
+                                            {{ table }}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Views Section -->
+                            {% if schema_data.view_count > 0 %}
+                            <div class="tree-node">
+                                <div class="tree-item" onclick="toggleNode(event)">
+                                    <span class="tree-toggle">▶</span>
+                                    <i class="bi bi-eye" style="color: #198754;"></i>
+                                    <strong>Views ({{ schema_data.view_count }})</strong>
+                                </div>
+                                <div class="tree-children" style="display: none; margin-left: 20px;">
+                                    {% for view in schema_data.views %}
+                                    <div class="tree-node">
+                                        <div class="tree-item">
+                                            <span class="tree-toggle" style="visibility: hidden;">▶</span>
+                                            <i class="bi bi-eye"></i>
+                                            {{ view }}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Files -->
+<div class="row mb-4 mt-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-spreadsheet"></i> Data Resources</h5>
+            </div>
+            <div class="card-body">
+                {% if data_files %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Resource</th>
+                                <th>Size</th>
+                                <th>Modified</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for file in data_files %}
+                            <tr>
+                                <td>Dataset {{ loop.index }}</td>
+                                <td>{{ '%.1f' | format(file.size / 1024) }} KB</td>
+                                <td>{{ file.modified }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No data resources found. Click "Refresh Data" to fetch from Snowflake.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-code"></i> Model Resources</h5>
+            </div>
+            <div class="card-body">
+                {% if model_files %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Resource</th>
+                                <th>Size</th>
+                                <th>Modified</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for file in model_files %}
+                            <tr>
+                                <td>Model Artifact {{ loop.index }}</td>
+                                <td>{{ '%.1f' | format(file.size / 1024) }} KB</td>
+                                <td>{{ file.modified }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No model resources found. Click "Train Models" after refreshing data.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .schema-tree {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .tree-node {
+        margin: 5px 0;
+    }
+
+    .tree-item {
+        padding: 8px 5px;
+        cursor: pointer;
+        user-select: none;
+        border-radius: 3px;
+        transition: background-color 0.2s;
+    }
+
+    .tree-item:hover {
+        background-color: #e9ecef;
+    }
+
+    .tree-toggle {
+        display: inline-block;
+        width: 15px;
+        text-align: center;
+        transition: transform 0.2s;
+        color: #666;
+    }
+
+    .tree-toggle.open {
+        transform: rotate(90deg);
+    }
+
+    .tree-children {
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .tree-children.visible {
+        display: block !important;
+    }
+</style>
+
+<script>
+    async function apiRequest(url, options = {}) {
+        const response = await fetch(url, options);
+        let payload = {};
+
+        try {
+            payload = await response.json();
+        } catch (_) {}
+
+        if (!response.ok || payload.status !== 'success') {
+            throw new Error(payload?.error?.message || `Request failed: ${response.status}`);
+        }
+
+        return payload;
+    }
+
+    async function pollJob(jobId, onUpdate) {
+        while (true) {
+            const payload = await apiRequest(`/api/jobs/${jobId}`);
+            const job = payload.data || {};
+            if (typeof onUpdate === 'function') {
+                onUpdate(job);
+            }
+
+            if (job.status === 'completed' || job.status === 'failed') {
+                return job;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+    }
+
+    function toggleNode(event) {
+        // Prevent event bubbling if it's from a nested element
+        if (event instanceof Event) {
+            event.stopPropagation();
+        }
+        
+        const element = event.currentTarget || event;
+        const children = element.nextElementSibling;
+        const toggle = element.querySelector('.tree-toggle');
+        
+        if (children && children.classList.contains('tree-children')) {
+            const isVisible = children.classList.contains('visible');
+            
+            if (isVisible) {
+                children.classList.remove('visible');
+                if (toggle) toggle.classList.remove('open');
+            } else {
+                children.classList.add('visible');
+                if (toggle) toggle.classList.add('open');
+            }
+        }
+    }
+
+    // Function to rebuild tree view from metadata
+    function rebuildTreeView(schemaStructure) {
+        const treeContainer = document.querySelector('.schema-tree');
+        if (!treeContainer) return;
+
+        let html = '';
+        for (const schemaName in schemaStructure) {
+            const schemaData = schemaStructure[schemaName];
+            html += `
+                <div class="tree-node">
+                    <div class="tree-item" onclick="toggleNode(this)">
+                        <span class="tree-toggle">▶</span>
+                        <i class="bi bi-folder-fill" style="color: #ffc107;"></i>
+                        <strong>${schemaName}</strong>
+                        <span class="badge bg-primary ms-2">T: ${schemaData.table_count}</span>
+                        <span class="badge bg-secondary ms-1">V: ${schemaData.view_count}</span>
+                    </div>
+                    <div class="tree-children" style="display: none; margin-left: 20px;">
+            `;
+
+            if (schemaData.table_count > 0) {
+                html += `
+                    <div class="tree-node">
+                        <div class="tree-item" onclick="toggleNode(event)">
+                            <span class="tree-toggle">▶</span>
+                            <i class="bi bi-table" style="color: #0d6efd;"></i>
+                            <strong>Tables (${schemaData.table_count})</strong>
+                        </div>
+                        <div class="tree-children" style="display: none; margin-left: 20px;">
+                `;
+                for (const table of schemaData.tables) {
+                    html += `
+                        <div class="tree-node">
+                            <div class="tree-item">
+                                <span class="tree-toggle" style="visibility: hidden;">▶</span>
+                                <i class="bi bi-diagram-3"></i>
+                                ${table}
+                            </div>
+                        </div>
+                    `;
+                }
+                html += `</div></div>`;
+            }
+
+            if (schemaData.view_count > 0) {
+                html += `
+                    <div class="tree-node">
+                        <div class="tree-item" onclick="toggleNode(event)">
+                            <span class="tree-toggle">▶</span>
+                            <i class="bi bi-eye" style="color: #198754;"></i>
+                            <strong>Views (${schemaData.view_count})</strong>
+                        </div>
+                        <div class="tree-children" style="display: none; margin-left: 20px;">
+                `;
+                for (const view of schemaData.views) {
+                    html += `
+                        <div class="tree-node">
+                            <div class="tree-item">
+                                <span class="tree-toggle" style="visibility: hidden;">▶</span>
+                                <i class="bi bi-eye"></i>
+                                ${view}
+                            </div>
+                        </div>
+                    `;
+                }
+                html += `</div></div>`;
+            }
+
+            html += `</div></div>`;
+        }
+
+        treeContainer.innerHTML = html;
+    }
+
+    // Function to check database status on page load
+    function checkDatabaseStatus() {
+        try {
+            const dbStatusBar = document.getElementById('dbStatusBar');
+            const dbStatusContent = document.getElementById('dbStatusContent');
+            const refreshBtn = document.getElementById('refreshDbStatusBtn');
+            const refreshBtnText = document.getElementById('refreshBtnText');
+            
+            // Create abort controller for timeout
+            const controller = new AbortController();
+            const timeoutMs = 10000; // Snowflake handshake can take a few seconds.
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                // Force update on timeout
+                if (dbStatusBar) {
+                    dbStatusBar.className = 'alert alert-danger d-flex justify-content-between align-items-center mb-0';
+                    dbStatusContent.innerHTML = '<strong>Database:</strong> <span>Not Connected</span>';
+                    refreshBtn.className = 'btn btn-sm btn-outline-danger';
+                    refreshBtnText.textContent = 'Retry';
+                }
+            }, timeoutMs);
+            
+            fetch('/api/database/status', { signal: controller.signal })
+                .then(response => {
+                    clearTimeout(timeoutId);
+                    return response.json().then(payload => ({ response, payload }));
+                })
+                .then(({ response, payload }) => {
+                    if (!response.ok || payload.status !== 'success') {
+                        throw new Error(payload?.error?.message || `HTTP ${response.status}`);
+                    }
+
+                    const data = payload.data || {};
+                    if (!dbStatusBar || !dbStatusContent) {
+                        console.error('Database status bar elements not found');
+                        return;
+                    }
+                    
+                    // Check both: connection successful AND database is COMMON_DATA_MODEL
+                    if (data.connected === true && data.database === 'COMMON_DATA_MODEL') {
+                        // Show connected status
+                        dbStatusBar.className = 'alert alert-info d-flex justify-content-between align-items-center mb-0';
+                        dbStatusContent.innerHTML = `<strong>Database:</strong> <span style="font-weight: bold; color: #0c5460;">${data.database}</span>&nbsp; | &nbsp;<strong>Status:</strong> <span class="badge bg-success">CONNECTED</span>`;
+                        refreshBtn.className = 'btn btn-sm btn-outline-info';
+                        refreshBtnText.textContent = 'Refresh';
+                    } else {
+                        // Show not connected status
+                        dbStatusBar.className = 'alert alert-danger d-flex justify-content-between align-items-center mb-0';
+                        dbStatusContent.innerHTML = '<strong>Database:</strong> <span>Not Connected</span>';
+                        refreshBtn.className = 'btn btn-sm btn-outline-danger';
+                        refreshBtnText.textContent = 'Retry';
+                    }
+                })
+                .catch(error => {
+                    clearTimeout(timeoutId);
+                    console.error('Database status check error:', error.message);
+                    if (dbStatusBar && dbStatusContent) {
+                        dbStatusBar.className = 'alert alert-danger d-flex justify-content-between align-items-center mb-0';
+                        dbStatusContent.innerHTML = '<strong>Database:</strong> <span>Not Connected</span>';
+                        refreshBtn.className = 'btn btn-sm btn-outline-danger';
+                        refreshBtnText.textContent = 'Retry';
+                    }
+                });
+        } catch(e) {
+            console.error('Error in checkDatabaseStatus:', e);
+            const dbStatusBar = document.getElementById('dbStatusBar');
+            const dbStatusContent = document.getElementById('dbStatusContent');
+            if (dbStatusBar && dbStatusContent) {
+                dbStatusBar.className = 'alert alert-danger d-flex justify-content-between align-items-center mb-0';
+                dbStatusContent.innerHTML = '<strong>Database:</strong> <span>Not Connected</span>';
+            }
+        }
+    }
+
+    // Function to reload metadata
+    function reloadMetadata() {
+        apiRequest('/api/metadata/schema-structure')
+            .then(payload => {
+                const data = payload.data || {};
+                if (data.schemas) {
+                    rebuildTreeView(data.schemas);
+                }
+            })
+            .catch(error => console.error('Error reloading metadata:', error));
+    }
+
+    document.getElementById('refreshDataBtn').addEventListener('click', async function() {
+        const btn = this;
+        const statusContainer = document.getElementById('statusContainer');
+        const statusAlert = document.getElementById('statusAlert');
+        const progressBar = document.getElementById('progressBar');
+        const outputLog = document.getElementById('outputLog');
+        
+        // Disable button and show progress
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Refreshing...';
+        statusContainer.style.display = 'block';
+        progressBar.style.display = 'block';
+        statusAlert.className = 'alert alert-info';
+        statusAlert.textContent = 'Submitting data refresh job...';
+        outputLog.style.display = 'none';
+
+        try {
+            const payload = await apiRequest('/api/data/refresh', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            });
+            const job = payload.data || {};
+
+            const finalJob = await pollJob(job.id, currentJob => {
+                statusAlert.className = 'alert alert-info';
+                statusAlert.textContent = currentJob.message || 'Refreshing data...';
+            });
+
+            progressBar.style.display = 'none';
+
+            if (finalJob.status === 'completed') {
+                const result = finalJob.result || {};
+                statusAlert.className = 'alert alert-success';
+                statusAlert.innerHTML = '<i class="bi bi-check-circle"></i> ' + (result.message || finalJob.message);
+                outputLog.style.display = 'none';
+                window.appUI?.notify(result.message || finalJob.message || 'Data refresh completed.', {
+                    title: 'Refresh Complete',
+                    tone: 'success'
+                });
+                reloadMetadata();
+                setTimeout(() => window.location.reload(), 3000);
+            } else {
+                statusAlert.className = 'alert alert-danger';
+                statusAlert.innerHTML = '<i class="bi bi-x-circle"></i> ' + (finalJob?.error?.message || finalJob.message || 'Data refresh failed.');
+                outputLog.style.display = 'none';
+                window.appUI?.notify(finalJob?.error?.message || finalJob.message || 'Data refresh failed.', {
+                    title: 'Refresh Failed',
+                    tone: 'error',
+                    timeoutMs: 7000
+                });
+            }
+        } catch (error) {
+            progressBar.style.display = 'none';
+            statusAlert.className = 'alert alert-danger';
+            statusAlert.innerHTML = '<i class="bi bi-x-circle"></i> An unexpected error occurred. Please try again.';
+            console.error('Refresh Data Error:', error);
+            window.appUI?.notify(error.message || 'Unable to start the data refresh job.', {
+                title: 'Refresh Failed',
+                tone: 'error',
+                timeoutMs: 7000
+            });
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh Data';
+        }
+    });
+    
+    document.getElementById('trainModelsBtn').addEventListener('click', async function() {
+        const btn = this;
+        const statusContainer = document.getElementById('statusContainer');
+        const statusAlert = document.getElementById('statusAlert');
+        const progressBar = document.getElementById('progressBar');
+        const outputLog = document.getElementById('outputLog');
+        
+        // Disable button and show progress
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Training...';
+        statusContainer.style.display = 'block';
+        progressBar.style.display = 'block';
+        statusAlert.className = 'alert alert-info';
+        statusAlert.textContent = 'Submitting model training job...';
+        outputLog.style.display = 'none';
+
+        try {
+            const payload = await apiRequest('/api/models/train', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            });
+            const job = payload.data || {};
+
+            const finalJob = await pollJob(job.id, currentJob => {
+                statusAlert.className = 'alert alert-info';
+                statusAlert.textContent = currentJob.message || 'Training models...';
+            });
+
+            progressBar.style.display = 'none';
+
+            if (finalJob.status === 'completed') {
+                const result = finalJob.result || {};
+                statusAlert.className = 'alert alert-success';
+                statusAlert.innerHTML = '<i class="bi bi-check-circle"></i> ' + (result.message || finalJob.message);
+                outputLog.style.display = 'none';
+                window.appUI?.notify(result.message || finalJob.message || 'Model training completed.', {
+                    title: 'Training Complete',
+                    tone: 'success'
+                });
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                statusAlert.className = 'alert alert-danger';
+                statusAlert.innerHTML = '<i class="bi bi-x-circle"></i> ' + (finalJob?.error?.message || finalJob.message || 'Model training failed.');
+                outputLog.style.display = 'none';
+                window.appUI?.notify(finalJob?.error?.message || finalJob.message || 'Model training failed.', {
+                    title: 'Training Failed',
+                    tone: 'error',
+                    timeoutMs: 7000
+                });
+            }
+        } catch (error) {
+            progressBar.style.display = 'none';
+            statusAlert.className = 'alert alert-danger';
+            statusAlert.innerHTML = '<i class="bi bi-x-circle"></i> An unexpected error occurred. Please try again.';
+            console.error('Train Models Error:', error);
+            window.appUI?.notify(error.message || 'Unable to start model training.', {
+                title: 'Training Failed',
+                tone: 'error',
+                timeoutMs: 7000
+            });
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-lightning"></i> Train Models';
+        }
+    });
+</script>
+
+<!-- Credentials Modal -->
+<div class="modal fade" id="credentialsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-lock"></i> Snowflake Connection</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="credentialsContent">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="saveCredentialsBtn">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    // Load credentials modal
+    const credentialsModal = document.getElementById('credentialsModal');
+    const saveCredentialsBtn = document.getElementById('saveCredentialsBtn');
+    credentialsModal.addEventListener('show.bs.modal', function () {
+        apiRequest('/api/credentials/view')
+            .then(payload => {
+                const data = payload.data || {};
+                const content = document.getElementById('credentialsContent');
+                const requiredEnv = Array.isArray(data.required_env) ? data.required_env : [];
+                const envHtml = requiredEnv.length
+                    ? `<ul class="mb-0">${requiredEnv.map(name => `<li><code>${name}</code></li>`).join('')}</ul>`
+                    : '<p class="mb-0 text-muted">No environment variable guidance available.</p>';
+                const sourceLabel = data.source === 'environment'
+                    ? 'Environment Variables'
+                    : data.source === 'config_file'
+                        ? 'Text File'
+                    : 'Not Configured';
+                const statusClass = data.configured ? 'alert alert-success' : 'alert alert-warning';
+                const statusText = data.configured
+                    ? data.source === 'config_file'
+                        ? 'Connection details are available from a local text file.'
+                        : 'Connection details are available from environment variables.'
+                    : (data.message || 'Snowflake credentials are not configured yet.');
+
+                content.innerHTML = `
+                    <div class="${statusClass}">
+                        <i class="bi bi-shield-lock"></i>
+                        <strong>${sourceLabel}</strong><br>
+                        <span>${statusText}</span>
+                    </div>
+                    <form id="credentialsForm" class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Account</label>
+                            <input class="form-control" name="account" value="${escapeHtml(data.account || '')}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">User</label>
+                            <input class="form-control" name="user" value="${escapeHtml(data.user || '')}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Password</label>
+                            <input class="form-control" type="password" name="password" value="${escapeHtml(data.password || '')}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Role</label>
+                            <input class="form-control" name="role" value="${escapeHtml(data.role || '')}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Database</label>
+                            <input class="form-control" name="database" value="${escapeHtml(data.database || '')}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Warehouse</label>
+                            <input class="form-control" name="warehouse" value="${escapeHtml(data.warehouse || '')}">
+                        </div>
+                    </form>
+                    <div class="alert alert-info mt-4 mb-0">
+                        <strong>Storage:</strong> saving here updates the running app session and writes the connection details to the local secrets folder.
+                        <div class="mt-3">${envHtml}</div>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                const content = document.getElementById('credentialsContent');
+                content.innerHTML = `<div class="alert alert-danger">Failed to load connection details. ${error.message}</div>`;
+            });
+    });
+
+    saveCredentialsBtn.addEventListener('click', function() {
+        const form = document.getElementById('credentialsForm');
+        if (!form) {
+            window.appUI?.notify('Connection details are not ready yet.', {
+                title: 'Save Failed',
+                tone: 'error',
+                timeoutMs: 5000
+            });
+            return;
+        }
+
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData.entries());
+        saveCredentialsBtn.disabled = true;
+        saveCredentialsBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+        apiRequest('/api/credentials/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+            .then(responsePayload => {
+                const responseData = responsePayload.data || {};
+                const modalInstance = bootstrap.Modal.getInstance(credentialsModal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                window.appUI?.notify(responsePayload.message || 'Snowflake connection details saved.', {
+                    title: 'Connection Saved',
+                    tone: 'success'
+                });
+
+                if (responseData.source) {
+                    checkDatabaseStatus();
+                }
+            })
+            .catch(error => {
+                window.appUI?.notify(error.message || 'Unable to save connection details.', {
+                    title: 'Save Failed',
+                    tone: 'error',
+                    timeoutMs: 7000
+                });
+            })
+            .finally(() => {
+                saveCredentialsBtn.disabled = false;
+                saveCredentialsBtn.innerHTML = 'Save';
+            });
+    });
+
+    // Refresh database status button
+    const refreshDbStatusBtn = document.getElementById('refreshDbStatusBtn');
+    
+    if (refreshDbStatusBtn) {
+        refreshDbStatusBtn.addEventListener('click', function() {
+            this.disabled = true;
+            const refreshBtnText = document.getElementById('refreshBtnText');
+            const originalText = refreshBtnText.textContent;
+            this.innerHTML = '<i class="bi bi-arrow-clockwise spinner"></i> <span id="refreshBtnText">Loading...</span>';
+            checkDatabaseStatus();
+            setTimeout(() => {
+                this.disabled = false;
+                const isConnected = document.getElementById('dbStatusBar').className.includes('alert-info');
+                this.innerHTML = `<i class="bi bi-arrow-clockwise"></i> <span id="refreshBtnText">${isConnected ? 'Refresh' : 'Retry'}</span>`;
+            }, 1000);
+        });
+    }
+
+    // Add CSS for spinning animation
+    const style = document.createElement('style');
+    style.textContent = `
+        .spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Check database status on page load and periodically
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            checkDatabaseStatus();
+            // Recheck every 30 seconds
+            setInterval(function() {
+                try {
+                    checkDatabaseStatus();
+                } catch(e) {
+                    console.error('Error in periodic database check:', e);
+                }
+            }, 30000);
+        } catch(e) {
+            console.error('Error initializing database status check:', e);
+            // Show error state if check fails
+            const dbStatusBar = document.getElementById('dbStatusBar');
+            const dbStatusContent = document.getElementById('dbStatusContent');
+            const refreshBtn = document.getElementById('refreshDbStatusBtn');
+            if (dbStatusBar) {
+                dbStatusBar.className = 'alert alert-danger d-flex justify-content-between align-items-center mb-0';
+                dbStatusContent.innerHTML = '<strong>Error:</strong> <span>Failed to check database status</span>';
+                refreshBtn.className = 'btn btn-sm btn-outline-danger';
+            }
+        }
+    });
+</script>
+{% endblock %}
